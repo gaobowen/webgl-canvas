@@ -1,0 +1,189 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8">
+  <title>Document</title>
+</head>
+
+<body>
+  <div id="status">wait...</div>
+  <button id="go" onclick="go()" style="font-size: large;">go => </button>
+  <progress id="go-pgrs" value="0" max="1200"></progress>
+  <button id="download" onclick="download()" style="font-size: large;">download !</button>
+  <div>
+    <span>FrameIndex: </span>
+    <span id="frameindex">0</span>
+    <span>；TotalFrame: 3000</span>
+    <span>；width: 1920</span>
+    <span>；height: 1080</span>
+    <span>；FPS: 30</span>
+    <span>；CODEC: H264</span>
+  </div>
+  <div id="app" style="background-color: lightgray; position: relative; display: flex;flex-direction: row;">
+    <canvas id="canvas-id" crossorigin="anonymous"
+      style="transform-origin: 0 0; transform: scale(1);background-color: white; float: left; left: 0px;top: 0px;"></canvas>
+  </div>
+</body>
+<script src="./fileSaver.js"></script>
+<script src="./mp4encoder.js"></script>
+<script type="module">
+  let status = document.getElementById("status");
+  status.innerText = "wait...";
+  let idx = document.getElementById("frameindex");
+  let pgrs = document.getElementById("go-pgrs");
+  let goEle = document.getElementById("go");
+  let downloadEle = document.getElementById("download");
+
+  var MP4Encoder = null
+  var FS = {}
+  var lengthBytesUTF8 = null;
+  var stringToUTF8 = null;
+  createMP4Encoder().then(m => {
+    console.log(m)
+    MP4Encoder = m;
+    FS = MP4Encoder.FS
+    lengthBytesUTF8 = MP4Encoder.lengthBytesUTF8
+    stringToUTF8 = MP4Encoder.stringToUTF8
+  })
+
+
+  import * as ProximaObj from '../src/index.js'
+
+  let { Proxima, mat4 } = ProximaObj;
+
+  let canvasEle = document.getElementById('canvas-id');
+  let proxima = new Proxima({ canvasEle, resolution: { width: 1920, height: 1080 }, renderScale: 1 });
+  let gl = proxima.gl;
+  console.log(gl)
+
+  let width = gl.drawingBufferWidth;
+  let height = gl.drawingBufferHeight;
+  var pixels = new Uint8Array(width * height * 4);
+
+
+
+
+
+  let layer1 = proxima.createLayer();
+  let lottieGraph = proxima.createGraph('lottie');
+
+  let getPosition = progress => {
+    lottieGraph.stop(progress);
+
+    for (let i = 0; i < 1; i++) {
+      //缩放->旋转->平移 
+      let aspect = 1920 / 1080;
+      let transModel = mat4.create();
+      // [-aspect, -1] 为左上角； [0, 0]为中心点, 宽的大小为 aspect * 2，高的大小为 2
+      mat4.translate(transModel, transModel, [-aspect * Math.cos(i/10.0) * 1 + 0.5, -1 * Math.cos(i/10.0) * 1 + 0.5, -2.3 * 0]);
+
+      let result = mat4.create();
+      if (true) {
+        mat4.multiply(result, transModel, result);
+      }
+      lottieGraph.updateModel(result);
+      layer1.drawElement(lottieGraph);
+    }
+    
+    proxima.toScreen([layer1]);
+    
+  }
+
+  let load = false;
+  lottieGraph.loadUrlAsync('https://resources.laihua.com/2018-12-13/347f5bed-4905-48f5-a892-a044c91f66e5.json').then(t => {
+    console.log('lottieGraph', t);
+    //let sss = 2
+    //lottieGraph.originScale(sss,sss* 0.5);
+    lottieGraph.stop(0);
+    load = true;
+
+
+    //   let animationDraw = (stamp) => {
+    //     let progress = (stamp % 6000) / 6000;
+
+
+
+    //     lottieGraph.updateModel(result);
+    //     layer1.drawElementList([lottieGraph]);
+
+    //     //输出图层到屏幕
+    //     proxima.toScreen([layer1]);
+    //     // requestAnimationFrame(animationDraw);
+    //   };
+    // animationDraw(0);
+  });
+
+
+  var getCStringPtr = function (jstr) {
+    var lengthBytes = lengthBytesUTF8(jstr) + 1;
+    var p = MP4Encoder._malloc(lengthBytes);
+    stringToUTF8(jstr, p, lengthBytes);
+    return p;
+  }
+
+  let d = 0;
+  let stop = false;
+  let isrunning = false;
+  let fps = 30;
+  let bufferPtr = null;
+
+
+  var ready = function () {
+    while (!MP4Encoder || !load);
+    bufferPtr = MP4Encoder._malloc(pixels.length);
+    stop = false;
+    var pStr = getCStringPtr("/tmp/demo2.mp4");
+    var ret = MP4Encoder._createH264(pStr, 1920, 1080, fps);
+    console.log("ready =>", ret);
+  }
+
+
+  let step = function (d) {
+
+    idx.innerText = d;
+    pgrs.value = d;
+
+    let progress = d % 30 / 30.0;
+
+    getPosition(progress);
+
+    //
+    gl.readPixels(0, 0, gl.drawingBufferWidth, gl.drawingBufferHeight, gl.RGBA, gl.UNSIGNED_BYTE, pixels);
+
+    MP4Encoder.HEAP8.set(pixels, bufferPtr);
+    //var ret = MP4Encoder._addFrame(bufferPtr);
+  };
+
+  var go = function () {
+    if (isrunning) return;
+    isrunning = true;
+    ready();
+
+    // step(15);
+
+    for (let i = 0; i < 300; i++) {
+      let ret = step(i);
+      console.log(i)
+      if (stop) return;
+    }
+    stop = true;
+    MP4Encoder._close();
+  };
+  goEle.onclick = go;
+
+  var download = () => {
+
+    var videoPath = getCStringPtr("/tmp/demo2.mp4");
+
+    var buff = FS.readFile('/tmp/demo2.mp4', { encoding: 'binary' });
+    saveAs(new Blob([buff]), `demo2.mp4`);
+  }
+
+  downloadEle.onclick = download;
+
+
+
+</script>
+
+</html>

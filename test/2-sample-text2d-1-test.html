@@ -1,0 +1,137 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8">
+  <title>Document</title>
+</head>
+
+<body>
+  <div id="app" style="background-color: lightgray; position: relative; display: flex;flex-direction: row;">
+    <canvas id="canvas-id" crossorigin="anonymous" ></canvas>
+  </div>
+</body>
+<script type="module">
+    import * as ProximaPKG from '../src/index.js'
+
+    let { Proxima, mat4,
+    TextRendering,
+    RichTextData,
+    RichText } = ProximaPKG;
+
+    // console.log(TextRendering);
+    // console.log('==============');
+    // console.log(RichTextData);
+    // console.log('==============');
+    // console.log(RichText);
+
+    //document.createElement('canvas');
+    if(1)
+    {
+      //TextRendering 文本测试
+      var str = "添加正文";
+      var drawTextObj = new TextRendering();
+      let textStyle = {
+        width : 200.1,
+        height : 50,
+        textColor : "red",//字体颜色
+        textAlign : "center",//对齐方式： left right center start end,     
+        fontStyle : "normal",// 字体样式：normal italic oblique  
+        fontVariant : "normal",//字体变体： normal small-caps   
+        fontWeight : "normal",//字体的粗细： normal bold bolder lighter 100 200 ... 
+        fontSize : "50px",//字体的大小： 如50px  
+        lineHeight : "",//字体的行高：如50px  
+        fontFamily : "monospace",//字体  
+        isUnderLine : false, //bool 是否设置下划线 
+        delLine : false,//bool 是否设置删除线 
+        lineSpace : 1,//行间距  
+        wordSpace : "0px", //字间距   
+        textDirection : "horizontal",//文字方向 vertical -- 竖向 horizontal-- 横向  
+        textfilter : "",//滤镜属性
+        textBaseline : "bottom",
+        shadowX : -200,//X阴影位置偏移 (像素)
+        shadowY : -50,//Y阴影位置偏移 (像素)
+        shadowBlur : 0,//模糊度
+        shadowColor : "RGBA(127,127,127,1)",//阴影颜色
+        scale : 1,//缩放比例
+        allAroundEx : 0,//周围扩展的大小
+      }
+      drawTextObj.setTextStyle(textStyle);
+      var textCanvas = drawTextObj.drawTextWrapAutomatic(str);
+      console.log(textCanvas);
+      console.log(drawTextObj);
+      let image_bitmap = textCanvas.transferToImageBitmap();
+
+      var canvas = document.getElementById("canvas-id");
+      var context = canvas.getContext('2d');
+      canvas.width = 1280;
+      canvas.height = 720;
+      context.drawImage(image_bitmap, 0, 0);
+    }
+    else{
+        //RichText 富文本测试
+        var richTextObj = new RichText();
+        richTextObj.height = 800;
+        richTextObj.width =800;
+        richTextObj.drawType = 1;
+        richTextObj.scale = 2;
+        var tempData = new RichTextData();
+        let textStyle = {
+          text : "哈哈dafa",
+          textColor : "red",//字体颜色
+          textAlign : "left",//对齐方式： left right center start end,     
+          fontStyle : "normal",// 字体样式：normal italic oblique  
+          fontVariant : "normal",//字体变体： normal small-caps   
+          fontWeight : "normal",//字体的粗细： normal bold bolder lighter 100 200 ... 
+          fontSize : "50px",//字体的大小： 如50px  
+          lineHeight : "",//字体的行高：如50px  
+          fontFamily : "monospace",//字体  
+          isUnderLine : false, //bool 是否设置下划线 
+          delLine : false,//bool 是否设置删除线 
+          lineSpace : 1,//行间距  
+          wordSpace : "1px", //字间距   
+          textDirection : "horizontal",//文字方向 vertical -- 竖向 horizontal-- 横向  
+          textfilter : "",//滤镜属性
+          textBaseline : "bottom"
+        }
+        tempData.setTextStyle(textStyle);
+        richTextObj.addRichTextData(tempData);
+
+        tempData = new RichTextData();
+        let textStyle1 = {
+          ...textStyle,
+          text : "嘿嘿jalfa",
+          textAlign : "center",
+          textColor : "blue",
+          fontSize : "80px",          
+          isUnderLine : true,
+          delLine : true
+        }
+        tempData.setTextStyle(textStyle1);
+        richTextObj.addRichTextData(tempData);
+
+        tempData = new RichTextData();
+        let textStyle2 = {
+          ...textStyle,
+          textAlign : "right",
+          textColor : "green",
+          fontSize : "30px",
+          text : "拉拉jjj"
+        }
+        //console.log(textStyle,textStyle1,textStyle2)
+        tempData.setTextStyle(textStyle2);
+        richTextObj.addRichTextData(tempData);
+        
+        var textCanvas =richTextObj.drawRichText();
+        let image_bitmap = textCanvas.transferToImageBitmap();
+
+        var canvas = document.getElementById("canvas-id");
+        var context = canvas.getContext('2d');
+        canvas.width = 1280;
+        canvas.height = 720;
+        context.drawImage(image_bitmap, 0, 0);
+    }
+
+</script>
+
+</html>

@@ -1,0 +1,89 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8">
+  <title>Document</title>
+</head>
+
+<body>
+  <div id="app" style="background-color: lightgray; position: relative; display: flex;flex-direction: row;">
+    <canvas id="canvas-id" crossorigin="anonymous"
+      style="transform-origin: 0 0; transform: scale(0.4);background-color: white; float: left; left: 0px;top: 0px;"></canvas>
+  </div>
+</body>
+<script type="module">
+  import * as ProximaObj from '../src/index.js'
+
+  let { Proxima, mat4 } = ProximaObj;
+
+  let canvasEle = document.getElementById('canvas-id');
+  let proxima = new Proxima({ canvasEle, resolution: { width: 1920, height: 1080 }, renderScale: 1.5 });
+
+  let layer1 = proxima.createLayer();
+  let imgGraph = proxima.createGraph('image');
+
+  //http://localhost:5000/test/1-2-image.jpeg
+  //https://resources.laihua.com/2020-6-24/c337c6e0-b5fc-11ea-b295-cffc002b5c5b.png
+  imgGraph.loadUrlAsync('http://localhost:3000/test/1-2-image.jpeg').then(t => {
+      console.log('imgGraph', t);
+
+      let animationDraw = (stamp) => {
+        let progress = (stamp % 6000) / 6000;
+
+        //绘制元素1
+        //缩放->旋转->平移 
+        //平移->缩放->旋转
+        let aspect = 1920 / 1080;
+        let transModel = mat4.create();
+        // [-aspect, -1] 为左上角； [0, 0]为中心点, 宽的大小为 aspect * 2，高的大小为 2
+        mat4.translate(transModel, transModel, [-aspect * progress * 0, -progress * 0, -3]);
+
+        let rotateModel = mat4.create();
+        mat4.rotate(rotateModel, rotateModel, Math.PI * 2 * progress, [0, 1, 0]);
+
+        let scaleModel = mat4.create();
+        mat4.scale(scaleModel, scaleModel, [0.5, 0.5, 1]);
+
+        let result = mat4.create();
+        if (true) {
+          //移动图片 且保持旋转缩放中心点不变
+          //mat4.translate(result, result, [-aspect * 0.25, 0, 0]);
+
+          //外部调用主要使用下面的3步
+          //-------------------------------------------------
+          mat4.multiply(result, scaleModel, result);
+          mat4.multiply(result, rotateModel, result);
+          //旋转中心点跟随图片一起移动
+          mat4.multiply(result, transModel, result);
+          //-------------------------------------------------
+        } else {
+          ////旋转中心点跟随图片一起移动
+          // mat4.translate(result, result, [-aspect * 0.25, 0, 0]);
+          // mat4.rotate(result, result, Math.PI * 2 * progress, [0, 0, 1]);
+          // mat4.scale(result, result, [0.5, 0.4, 1]);
+          // //移动图片 且 保持旋转缩放中心点不变
+          // mat4.translate(result, result, [-aspect * 0.25, 0, -1.00]);
+        }
+
+        imgGraph.updateModel(result);
+        layer1.drawElement(imgGraph);
+
+
+        //输出图层到屏幕
+        proxima.toScreen([layer1]);
+
+        requestAnimationFrame(animationDraw);
+      };
+
+      animationDraw(0);
+
+
+    });
+
+  //console.log('proxima', proxima, Proxima);
+
+
+</script>
+
+</html>

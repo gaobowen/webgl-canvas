@@ -1,0 +1,113 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8">
+  <title>Document</title>
+</head>
+
+<body>
+  <div id="app" style="background-color: lightgray; position: relative; display: flex;flex-direction: row;">
+    <canvas id="canvas-id" crossorigin="anonymous"
+      style="background-color: white; transform-origin: 0 0; transform: scale(0.5);"></canvas>
+    <canvas id="canvas-id2" crossorigin="anonymous" width="1920" height="1080"
+      style="background-color: transparent; transform-origin: 0 0; transform: scale(0.5); position: absolute;"></canvas>
+  </div>
+</body>
+<script type="module">
+  import * as ProximaPKG from '../src/index.js'
+
+  let {
+    Proxima, mat4,
+    TextRendering,
+    RichTextData,
+    RichText
+  } = ProximaPKG;
+
+  // var str = "添加正文";
+  // var drawTextObj = new TextRendering();
+  let textStyle = {
+    width: 200.46,
+    height: 50.5,
+    textColor: "red",//字体颜色
+    textAlign: "center",//对齐方式： left right center start end,     
+    fontStyle: "normal",// 字体样式：normal italic oblique  
+    fontVariant: "normal",//字体变体： normal small-caps   
+    fontWeight: "normal",//字体的粗细： normal bold bolder lighter 100 200 ... 
+    fontSize: "50px",//字体的大小： 如50px  
+    lineHeight: "",//字体的行高：如50px  
+    fontFamily: "Microsoft YaHei",//字体  
+    isUnderLine: false, //bool 是否设置下划线 
+    delLine: false,//bool 是否设置删除线 
+    lineSpace: 1,//行间距  
+    wordSpace: "1px", //字间距   
+    textDirection: "horizontal",//文字方向 vertical -- 竖向 horizontal-- 横向  
+    textfilter: "",//滤镜属性
+    textBaseline: "bottom",
+    shadowX: -100,//X阴影位置偏移 (像素)
+    shadowY: -20,//Y阴影位置偏移 (像素)
+    shadowBlur: 20,//模糊度
+    shadowColor: "RGBA(127,0,127,1)",//阴影颜色
+    scale: 2,//缩放比例
+    allAroundEx: 0
+  }
+
+  //========================================================
+
+  let canvasEle2 = document.getElementById('canvas-id2');
+  let ctx2 = canvasEle2.getContext('2d');
+  ctx2.fillStyle = '#000000FF';
+  ctx2.fillRect(1920 / 2 - 4, 1080 / 2 - 4, 8, 8);
+
+  let canvasEle = document.getElementById('canvas-id');
+  let proxima = new Proxima({ canvasEle, resolution: { width: 1920, height: 1080 }, renderScale: 1 });
+
+  let layer1 = proxima.createLayer();
+  let textGraph = proxima.createGraph('text');
+
+  textGraph.setTextStyle(textStyle);
+  textGraph.updateText('添加正文');
+
+  //console
+  let animationDraw = (stamp) => {
+    let progress = (stamp % 6000) / 6000;
+
+    let aspect = 1920 / 1080;
+    let transModel = mat4.create();
+    // [-aspect, -1] 为左上角； [0, 0]为中心点, 宽的大小为 aspect * 2，高的大小为 2
+    mat4.translate(transModel, transModel, [-aspect * 0, 0, 0]);
+
+    let rotateModel = mat4.create();
+    mat4.rotate(rotateModel, rotateModel, Math.PI * 2 * progress, [0, 0, 1]);
+
+    let scaleModel = mat4.create();
+    mat4.scale(scaleModel, scaleModel, [1, 1, 1]);
+
+    let result = mat4.create();
+    mat4.multiply(result, scaleModel, result);
+    mat4.multiply(result, rotateModel, result);
+    mat4.multiply(result, transModel, result);
+
+    textGraph.updateModel(result);
+
+    layer1.drawElementList([textGraph]);
+
+    //绘制元素2
+    // let model2 = mat4.create();
+    // mat4.translate(model2, model2, [1920/1080 * progress, 1 * progress, -1.00]);
+    // mat4.scale(model2, model2, [progress, progress, 1]);
+    // mat4.rotate(model2, model2, Math.PI * 2 * - progress, [0, 0, 1]);
+    // layer1.drawElement(imgGraph, model2);
+
+    //输出图层到屏幕
+    proxima.toScreen([layer1]);
+
+    requestAnimationFrame(animationDraw);
+  };
+
+  animationDraw(0);
+
+
+</script>
+
+</html>

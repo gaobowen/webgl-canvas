@@ -1,0 +1,84 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8">
+  <title>Document</title>
+</head>
+
+<body>
+  <div id="app" style="background-color: lightgray; position: relative; display: flex;flex-direction: row;">
+    <canvas id="canvas-id" crossorigin="anonymous"
+      style="transform-origin: 0 0; transform: scale(0.4);background-color: white; float: left; left: 0px;top: 0px;"></canvas>
+  </div>
+</body>
+<script type="module">
+  import * as ProximaPKG from '../src/index.js'
+  import MaskFilter from '../filters/mask-filter.js';
+
+  let { Proxima, mat4, createTexture } = ProximaPKG;
+
+  let canvasEle = document.getElementById('canvas-id');
+  let proxima = new Proxima({ canvasEle, resolution: { width: 1920, height: 1080 }, renderScale: 1.5 });
+  proxima.registerFilter('MaskFilter', MaskFilter);
+
+  let layer1 = proxima.createLayer();
+  let imgGraph = proxima.createGraph('image');
+  let lottieGraph = proxima.createGraph('lottie');
+
+
+
+  let imgURL = 'http://localhost:5000/test/1-2-image.jpeg';
+  //https://resources.laihua.com/2020-6-24/c337c6e0-b5fc-11ea-b295-cffc002b5c5b.png
+  let lottieURL = 'https://resources.laihua.com/2018-12-13/347f5bed-4905-48f5-a892-a044c91f66e5.json';
+  imgGraph.loadUrlAsync(imgURL).then(t => {
+    console.log('imgGraph', t);
+
+    lottieGraph.loadUrlAsync(lottieURL).then(t2 => {
+      lottieGraph.originScale(imgGraph.width / lottieGraph.width, imgGraph.height / lottieGraph.height);
+      console.log('lottieGraph', lottieGraph);
+      lottieGraph.play();
+
+      let filter1 = proxima.createFilter('MaskFilter');
+      filter1.setMaskTexture(lottieGraph.texture);
+      imgGraph.filters = [filter1];
+
+      let animationDraw = (stamp) => {
+        let progress = (stamp % 6000) / 6000;
+        filter1.setMaskTexture(lottieGraph.texture);
+        
+        let aspect = 1920 / 1080;
+        let transModel = mat4.create();
+        mat4.translate(transModel, transModel, [-aspect * 0.5 * 0, -progress * 0, -1]);
+        let rotateModel = mat4.create();
+        mat4.rotate(rotateModel, rotateModel, Math.PI * 2 * 0, [0, 0, 1]); //progress
+        let scaleModel = mat4.create();
+        mat4.scale(scaleModel, scaleModel, [0.5, 0.5, 1]);
+
+        let result = mat4.create();
+        mat4.multiply(result, scaleModel, result);
+        mat4.multiply(result, rotateModel, result);
+        mat4.multiply(result, transModel, result);
+
+        //imgGraph.updateModel(result);
+        lottieGraph.updateModel(result)
+        
+        layer1.drawElementList([imgGraph, lottieGraph]);
+
+        //输出图层到屏幕
+        proxima.toScreen([layer1]);
+        requestAnimationFrame(animationDraw);
+      };
+      setTimeout(()=>{
+        animationDraw(0);
+      });
+      
+    });
+  });
+
+  //console.log('proxima', proxima, Proxima);
+
+
+</script>
+
+</html>
